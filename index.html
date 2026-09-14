@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Barbearia Dom Rocha — Agende seu corte online | Vila Ferro</title>
+<meta name="description" content="Barbearia clássica em Vila Ferro. Agende corte masculino, barba e combos pelo WhatsApp em poucos segundos. Escolha dia, horário e profissional com atendimento pontual e sem filas.">
+<meta name="keywords" content="barbearia, agendar corte, barbearia online, corte masculino, barba, degradê, agendamento barbearia, Barbearia Dom Rocha">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://SEU-DOMINIO.com.br/">
+<meta name="geo.region" content="BR">
+<meta name="geo.placename" content="Vila Ferro">
+
+<link rel="icon" type="image/png" sizes="32x32" href="assets/img/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/img/icons/favicon-64.png">
+<link rel="apple-touch-icon" href="assets/img/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#16130F">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Barbearia Dom Rocha">
+<meta property="og:title" content="Barbearia Dom Rocha — Agende seu corte online">
+<meta property="og:description" content="Agende corte, barba e combos pelo WhatsApp em poucos segundos. Escolha dia, horário e profissional com hora marcada.">
+<meta property="og:url" content="https://SEU-DOMINIO.com.br/">
+<meta property="og:image" content="https://SEU-DOMINIO.com.br/assets/img/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="pt_BR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://SEU-DOMINIO.com.br/assets/img/og.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-bg"><img src="assets/img/hero.webp" alt="Ambiente clássico de barbearia com poltronas vintage e iluminação aconchegante" loading="eager" fetchpriority="high"></div>
+  <div class="hero-in">
+    <div class="brand">
+      <img class="logo" src="assets/img/icons/apple-touch-icon.png" alt="Logo Barbearia Dom Rocha">
+      <div>
+        <h1>Dom <b>Rocha</b></h1>
+        <div class="tg">Barbearia clássica · hora marcada</div>
+      </div>
+    </div>
+    <div class="meta" id="meta"></div>
+    <button class="repeat" id="repeatBtn" onclick="repeatLast()"></button>
+  </div>
+</header>
+<div class="closed-banner" id="closedBanner"></div>
+
+<nav class="nav"><div class="nav-in" id="nav"></div></nav>
+<main id="menu" class="container main-wrap"></main>
+
+<section class="sobre" id="sobre">
+  <div class="sobre-card">
+    <h2>Sobre a Dom Rocha</h2>
+    <p>A <b>Barbearia Dom Rocha</b> é uma casa de barbeiro à moda antiga, com cadeira de couro, navalha bem amolada e aquele café enquanto você espera. Aqui cada corte é feito com calma e capricho — do degradê no precisão à barba desenhada na toalha quente.</p>
+    <p>Escolha os <b>serviços</b>, marque a <b>data</b> e o <b>horário</b>, e se quiser peça o seu <b>profissional preferido</b>. Sem fila, sem espera: você chega na hora certa e senta na cadeira. O pagamento é combinado no local — dinheiro, PIX ou cartão.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-in">
+    <div class="fb">Barbearia Dom Rocha</div>
+    <div class="footer-grid">
+      <div class="footer-item">
+        <div class="footer-text">
+          <strong id="footAddr">📍 Rua do Ferreiro, 88 — Vila Ferro</strong>
+          <span>Atendimento com hora marcada</span>
+        </div>
+      </div>
+      <div class="footer-item">
+        <div class="footer-text">
+          <strong>🕐 Terça a Sábado · 9h às 20h</strong>
+          <span>Atendimento pontual sem filas</span>
+        </div>
+      </div>
+      <div class="footer-item">
+        <div class="footer-text">
+          <strong>💳 Pagamento no local</strong>
+          <span>Dinheiro, PIX ou Cartão (Débito/Crédito)</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>Agendamento online seguro via WhatsApp · Barbearia Dom Rocha © 2026</span>
+    </div>
+  </div>
+</footer>
+
+<button class="fab hide" id="fab" onclick="openCart()" aria-label="Ver sacola de agendamento">
+  <div class="fab-left">
+    <span class="c-count" id="fabCount">0</span>
+    <span class="fab-label">Ver sacola</span>
+  </div>
+  <div class="fab-right">
+    <span class="c-total" id="fabTotal">R$ 0,00</span>
+    <span class="fab-btn">Avançar →</span>
+  </div>
+</button>
+
+<div class="pwa" id="pwaBar">
+  <div class="in"><b>Instale a Dom Rocha</b> no seu celular — agende seu corte em 1 toque.</div>
+  <button onclick="installPWA()">Instalar</button>
+  <button class="x" onclick="document.getElementById('pwaBar').style.display='none'">×</button>
+</div>
+
+<div class="sheet-wrap" id="sheetWrap" onclick="if(event.target===this)closeAll()">
+  <div class="sheet" id="sheet">
+    <div class="sh-head"><h2 id="shTitle"></h2><button class="sh-close" onclick="closeAll()" aria-label="Fechar">×</button></div>
+    <div class="sh-body" id="shBody"></div>
+    <div class="sh-foot" id="shFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"Barbershop",
+  "name":"Barbearia Dom Rocha",
+  "image":"https://SEU-DOMINIO.com.br/assets/img/og.jpg",
+  "url":"https://SEU-DOMINIO.com.br/",
+  "telephone":"+SEU_WHATSAPP",
+  "priceRange":"$$",
+  "address":{"@type":"PostalAddress","streetAddress":"Rua do Ferreiro, 88 — Vila Ferro","addressCountry":"BR"},
+  "openingHoursSpecification":[
+    {"@type":"OpeningHoursSpecification","dayOfWeek":["Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"09:00","closes":"20:00"}
+  ],
+  "makesOffer":[
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Corte"},"price":"45.00","priceCurrency":"BRL"},
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Barba"},"price":"35.00","priceCurrency":"BRL"},
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Corte + Barba"},"price":"70.00","priceCurrency":"BRL"}
+  ]
+}
+</script>
+
+<script src="assets/js/app.js" defer></script>
+</body>
+</html>
