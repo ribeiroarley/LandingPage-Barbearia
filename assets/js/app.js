@@ -73,7 +73,8 @@ let currentCalendarYear = new Date().getFullYear();
 function getFirstValidDate(){
   const d = new Date();
   d.setHours(0,0,0,0);
-  for(let i=0; i<60; i++){
+  const max = CONFIG.diasFrente || 14;
+  for(let i=0; i<max; i++){
     if(CONFIG.horario.dias.includes(d.getDay())){
       const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
       const slots = slotsDoDia(iso);
@@ -131,7 +132,15 @@ function renderIOSCalendar(container){
   const today = new Date();
   today.setHours(0,0,0,0);
 
+  const maxDate = new Date(today);
+  maxDate.setDate(today.getDate() + (CONFIG.diasFrente || 14));
+  maxDate.setHours(23,59,59,999);
+
   const isCurrentMonth = (currentCalendarYear === today.getFullYear() && currentCalendarMonth === today.getMonth());
+  const nextMonthStart = new Date(currentCalendarYear, currentCalendarMonth + 1, 1);
+  nextMonthStart.setHours(0,0,0,0);
+  const isNextDisabled = nextMonthStart > maxDate;
+
   const firstDayIndex = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
   const daysInMonth = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
   const mesExtenso = MESES_EXTENSO[currentCalendarMonth];
@@ -141,7 +150,7 @@ function renderIOSCalendar(container){
       <div class="cal-header">
         <button type="button" class="cal-nav" id="calPrev" ${isCurrentMonth ? 'disabled' : ''} aria-label="Mês anterior">‹</button>
         <span class="cal-title">${mesExtenso} ${currentCalendarYear}</span>
-        <button type="button" class="cal-nav" id="calNext" aria-label="Próximo mês">›</button>
+        <button type="button" class="cal-nav" id="calNext" ${isNextDisabled ? 'disabled' : ''} aria-label="Próximo mês">›</button>
       </div>
       <div class="cal-weekdays">
         ${DIAS_SEMANA_SIGLAS.map(s => `<span class="cal-weekday">${s}</span>`).join("")}
@@ -161,6 +170,7 @@ function renderIOSCalendar(container){
     const isPast = thisDate < today;
     const isClosed = !CONFIG.horario.dias.includes(thisDate.getDay());
     const isToday = thisDate.getTime() === today.getTime();
+    const isBeyond = thisDate > maxDate;
 
     let allSlotsPassed = false;
     if(isToday){
@@ -168,7 +178,7 @@ function renderIOSCalendar(container){
       allSlotsPassed = !slots.some(s => !s.off);
     }
 
-    const isDisabled = isPast || isClosed || allSlotsPassed;
+    const isDisabled = isPast || isClosed || allSlotsPassed || isBeyond;
     const isSelected = order.data === iso;
 
     html += `
@@ -204,6 +214,7 @@ function renderIOSCalendar(container){
   const nextBtn = container.querySelector("#calNext");
   if(nextBtn){
     nextBtn.addEventListener("click", () => {
+      if(isNextDisabled) return;
       currentCalendarMonth++;
       if(currentCalendarMonth > 11){
         currentCalendarMonth = 0;
@@ -219,6 +230,7 @@ function renderIOSCalendar(container){
       if(!iso) return;
       order.data = iso;
       order.hora = "";
+      clearFieldError("fieldData");
       renderCalendarAndSlots();
       updateSend();
     });
@@ -237,6 +249,7 @@ function renderSlots(container){
   let html = `
     <div class="slots-wrap">
       <div class="slots-title">Horários disponíveis para <b>${dataContextual(order.data)}</b>:</div>
+      ${availableSlots.length > 0 && availableSlots.length <= 5 ? `<div class="scarcity-hint">⚡ Restam apenas ${availableSlots.length} horário${availableSlots.length > 1 ? 's' : ''} para este dia!</div>` : ''}
   `;
 
   if(!availableSlots.length){
@@ -275,6 +288,7 @@ function renderMeta(){
   const s=statusLoja();
   document.getElementById("meta").innerHTML=`
     <span class="chip ${s.aberto?'status-open':'status-closed'}"><span class="dot ${s.aberto?'on':'off'}"></span>${s.aberto?'Aberto agora':'Fechado'}</span>
+    <span class="chip rating-chip">★ 4.9 (850+ no Google)</span>
     <span class="chip"><a href="${CONFIG.maps}" target="_blank" rel="noopener">📍 Como chegar</a></span>
     <span class="chip">🕐 Ter a Sáb · 9h–20h</span>`;
   document.getElementById("footAddr").textContent="📍 "+CONFIG.endereco;
@@ -312,7 +326,7 @@ function render(){
 }
 function cardEl(it){
   const el=document.createElement("div"); el.className="card"; el.id="card-"+it.id;
-  const thumb=it.img?`<img class="thumb" loading="lazy" decoding="async" src="assets/img/services/${it.img}.webp" alt="${it.alt||it.n}">`:"";
+  const thumb=it.img?`<img class="thumb" width="104" height="104" loading="lazy" decoding="async" src="assets/img/services/${it.img}.webp" alt="${it.alt||it.n}">`:"";
   el.innerHTML=`${thumb}<div class="txt"><h3>${it.n}</h3><div class="desc">${it.d||""}</div>
     <div class="dur">🕐 ${durLabel(it.dur)}</div>
     <div class="bot"><span class="price">${brl(it.p)}</span><span id="act-${it.id}"></span></div></div>`;
@@ -437,7 +451,7 @@ function renderCart(){
   const formHtml = `
     <div class="nudge">💈 <b>Aproveite e agende também</b> a barba ou a sobrancelha — sai tudo na mesma cadeira, sem esperar de novo.</div>
     
-    <div class="field">
+    <div class="field" id="fieldData">
       <label>Escolha a data do atendimento</label>
       <div id="calContainer"></div>
     </div>
@@ -449,8 +463,8 @@ function renderCart(){
         ${CONFIG.profissionais.map(p=>`<button type="button" class="o2 center ${order.prof===p?'sel':''}" onclick="setProf('${p}')">${p==='Sem preferência'?'😎 '+p:'💈 '+p}</button>`).join("")}
       </div>
     </div>
-    <div class="field"><label>Seu nome</label><input class="txt" id="fNome" placeholder="Como te chamam?" value="${order.nome}" oninput="order.nome=this.value;updateSend()"></div>
-    <div class="field"><label>Seu WhatsApp</label><input class="txt" id="fTel" inputmode="numeric" placeholder="(51) 90000-0000" value="${order.tel}" oninput="order.tel=this.value;updateSend()"></div>
+    <div class="field" id="fieldNome"><label>Seu nome</label><input class="txt" id="fNome" placeholder="Como te chamam?" value="${order.nome}" oninput="order.nome=this.value;clearFieldError('fieldNome');updateSend()"></div>
+    <div class="field" id="fieldTel"><label>Seu WhatsApp</label><input class="txt" id="fTel" inputmode="tel" placeholder="(11) 90000-0000" value="${order.tel}" oninput="handlePhoneInput(this);updateSend()"></div>
     <div class="field"><label>Pagamento (no local)</label>
       <div class="pay3">
         <button type="button" class="o2 center ${order.pag==='PIX'?'sel':''}" onclick="setPag('PIX')">💠 PIX</button>
@@ -480,6 +494,35 @@ function renderCart(){
   renderCalendarAndSlots();
   updateSend();
 }
+
+/* ===================== FORMATO E VALIDAÇÃO ===================== */
+function formatPhone(v){
+  const digits = String(v||"").replace(/\D/g,"").slice(0,11);
+  if(!digits) return "";
+  if(digits.length <= 2) return `(${digits}`;
+  if(digits.length <= 6) return `(${digits.slice(0,2)}) ${digits.slice(2)}`;
+  if(digits.length <= 10) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7,11)}`;
+}
+function handlePhoneInput(input){
+  input.value = formatPhone(input.value);
+  order.tel = input.value;
+  clearFieldError("fieldTel");
+}
+function highlightFieldError(fieldId, msg){
+  const el = document.getElementById(fieldId);
+  if(el){
+    el.classList.add("field-error", "shake");
+    setTimeout(()=>el.classList.remove("shake"), 400);
+    el.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+  if(msg) toast(msg);
+}
+function clearFieldError(fieldId){
+  const el = document.getElementById(fieldId);
+  if(el) el.classList.remove("field-error");
+}
+
 // sugestões que aumentam o ticket
 function suggestBlock(){
   const faltantes=["barba","pezinho","sobrancelha"].map(x=>ALL[x]).filter(it=>it && !cart.some(l=>l.id===it.id));
@@ -489,9 +532,16 @@ function suggestBlock(){
 }
 function incLine(id){ const l=cart.find(x=>x.lineId===id); if(l){l.qty++;onCartChange();} }
 function decLine(id){ const l=cart.find(x=>x.lineId===id); if(!l)return; l.qty--; if(l.qty<=0)cart=cart.filter(x=>x!==l); onCartChange(); }
-function setData(iso){ order.data=iso; order.hora=""; renderCalendarAndSlots(); updateSend(); }
+function setData(iso){
+  order.data=iso;
+  order.hora="";
+  clearFieldError("fieldData");
+  renderCalendarAndSlots();
+  updateSend();
+}
 function setHora(t){
   order.hora=t;
+  clearFieldError("slotsField");
   const slotsContainer = document.getElementById("slotsField");
   if(slotsContainer){
     slotsContainer.querySelectorAll(".slot").forEach(b => {
@@ -518,17 +568,46 @@ function aplicarCupom(){
   if(CONFIG.cupons[code]){ toast("Cupom aplicado: "+CONFIG.cupons[code].label); } else if(code){ toast("Cupom inválido"); order.cupom=""; }
   renderCart();
 }
-function updateSend(){ const b=document.getElementById("sendBtn"); if(!b)return;
-  const ok = cart.length && order.data && order.hora && order.nome.trim() && order.tel.trim();
-  b.disabled=!ok; }
+function updateSend(){
+  const b=document.getElementById("sendBtn");
+  if(!b) return;
+  const telDigits = String(order.tel||"").replace(/\D/g,"");
+  const ok = cart.length && order.data && order.hora && order.nome.trim().length >= 2 && telDigits.length >= 10;
+  b.classList.toggle("attention", !ok && Boolean(order.data || order.nome.trim()));
+}
 
 /* ===================== ENVIO WHATSAPP ===================== */
 function enviar(){
-  if(!cart.length){toast("Escolha ao menos um serviço");return;}
-  if(!order.data){toast("Escolha o dia");return;}
-  if(!order.hora){toast("Escolha o horário");return;}
-  if(!order.nome.trim()){toast("Digite seu nome");return;}
-  if(!order.tel.trim()){toast("Digite seu WhatsApp");return;}
+  if(!cart.length){ toast("Escolha ao menos um serviço"); return; }
+  if(!order.data){
+    highlightFieldError("fieldData", "Escolha a data do atendimento");
+    return;
+  }
+  clearFieldError("fieldData");
+
+  if(!order.hora){
+    highlightFieldError("slotsField", "Escolha o horário desejado");
+    return;
+  }
+  clearFieldError("slotsField");
+
+  if(!order.nome.trim() || order.nome.trim().length < 2){
+    highlightFieldError("fieldNome", "Digite seu nome");
+    const input = document.getElementById("fNome");
+    if(input) input.focus();
+    return;
+  }
+  clearFieldError("fieldNome");
+
+  const telDigits = String(order.tel||"").replace(/\D/g,"");
+  if(!telDigits || telDigits.length < 10){
+    highlightFieldError("fieldTel", "Informe seu WhatsApp com DDD (ex: 11 99999-9999)");
+    const input = document.getElementById("fTel");
+    if(input) input.focus();
+    return;
+  }
+  clearFieldError("fieldTel");
+
   const L=[];
   L.push(`*AGENDAMENTO — ${CONFIG.nome}*`); L.push("");
   L.push(`*Cliente:* ${order.nome.trim()}`);
@@ -549,7 +628,9 @@ function enviar(){
   localStorage.setItem("dr_last", JSON.stringify({cart, order:{...order}}));
   localStorage.setItem("dr_nome", order.nome.trim());
   localStorage.setItem("dr_tel", order.tel.trim());
-  window.open(`https://wa.me/${CONFIG.whatsapp}?text=`+encodeURIComponent(L.join("\n")),"_blank");
+  
+  const cleanWa = String(CONFIG.whatsapp).replace(/\D/g,"");
+  window.open(`https://wa.me/${cleanWa}?text=`+encodeURIComponent(L.join("\n")),"_blank");
 }
 
 /* ===================== REPETIR / NOME ===================== */
