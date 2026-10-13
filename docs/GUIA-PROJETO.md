@@ -1,56 +1,90 @@
-# GUIA DO PROJETO — Barbearia Dom Rocha
+# CONFIGURAÇÃO E MANUTENÇÃO TÉCNICA DO PROJETO
 
-Este repositório contém uma **landing page de alta conversão e agendamento online** para barbearia com experiência estilo iFood e agendamento direto pelo WhatsApp — sem aplicativo para baixar, sem mensalidades e sem intermediários.
-
-O cliente acessa o site, seleciona os serviços, escolhe o dia no calendário estilo iOS, define o horário disponível, seleciona o profissional e envia a solicitação pronta para o WhatsApp do estabelecimento.
-
----
-
-## Como Personalizar em 3 Passos
-
-1. **Defina as Informações do Estabelecimento:**
-   - Configure o número do WhatsApp, nome, endereço e horários no arquivo `assets/js/app.js` (objeto `CONFIG`).
-   - Atualize os dados estruturados (Schema.org / JSON-LD) no `index.html`.
-2. **Personalize o Catálogo e Preços:**
-   - Ajuste as categorias, serviços, durações e preços no array `MENU` em `assets/js/app.js`.
-   - Coloque as imagens dos serviços em `assets/img/services/` em formato `.webp`.
-3. **Publique:**
-   - Faça o deploy estático instantâneo no [Vercel](https://vercel.com), [Netlify Drop](https://app.netlify.com/drop) ou [GitHub Pages](https://pages.github.com).
+> **Manual Técnico de Operação e Parametrização Interna.**  
+> Referência para customização de variáveis de negócio, tokens CSS e chaves de armazenamento local.
 
 ---
 
-## Onde Encontrar as Configurações
+## 1. Referência de Configuração de Negócio (`assets/js/config.js`)
 
-- **WhatsApp (`SEU_WHATSAPP`):**
-  - No `assets/js/app.js`: constante `CONFIG.whatsapp` (formato: `55` + DDD + número, ex: `5511999998888`).
-  - No `index.html`: campo `telephone` do script `application/ld+json`.
-- **Serviços, Preços e Descrições:**
-  - Dentro de `assets/js/app.js` no array `MENU`.
-- **Imagens e Assets:**
-  - Fotos dos serviços: `assets/img/services/` (`.webp`).
-  - Banner principal: `assets/img/hero.webp`.
-  - Imagem OpenGraph / Preview de redes sociais: `assets/img/og.jpg`.
-  - Favicons e ícones PWA: `assets/img/icons/`.
-- **Estilos e Cores:**
-  - Variáveis de cores em `:root` no início do `assets/css/style.css`.
-- **Domínio e SEO:**
-  - Atualize `https://SEU-DOMINIO.com.br/` no `canonical` e nas tags `og:` do `index.html`.
-- **Configurações PWA:**
-  - `manifest.json`: ajuste `name`, `short_name` e `theme_color`.
+Todas as variáveis com impacto direto na lógica de cálculo e exibição estão centralizadas no módulo [`assets/js/config.js`](../assets/js/config.js).
 
----
+### 1.1. Identificação e Contato
+- `CONFIG.nome` (string): Identificador textual exibido na marca, título e mensagens transacionais.
+- `CONFIG.whatsapp` (string): Sequência numérica de destino contendo código do país (55) + DDD (2 dígitos) + número (8 ou 9 dígitos). Deve conter apenas números ou string limpa (a camada `whatsapp.js` remove pontuação automaticamente via regex).
+- `CONFIG.endereco` (string): Endereço físico injetado dinamicamente no elemento `#footAddr`.
+- `CONFIG.maps` (string): URL completa direcionada para o ponto exato no Google Maps com parâmetros de busca (`?q=...`).
 
-## Regras de Ouro de Desenvolvimento
+### 1.2. Regras de Expediente e Janela de Agendamento
+- `CONFIG.horario.dias` (number[]): Lista de números inteiros correspondentes aos dias com expediente ativo (`0` = Domingo, `1` = Segunda, `2` = Terça, `3` = Quarta, `4` = Quinta, `5` = Sexta, `6` = Sábado). Dias ausentes desta lista são bloqueados compulsoriamente no calendário com classe `.disabled`.
+- `CONFIG.horario.abre` (string): Horário inicial do primeiro slot de atendimento ("HH:MM").
+- `CONFIG.horario.fecha` (string): Horário final de encerramento do expediente ("HH:MM").
+- `CONFIG.horario.slot` (number): Duração de cada bloco de agendamento em minutos (padrão: `30`).
+- `CONFIG.diasFrente` (number): Limite máximo de avanço no calendário em dias corridos a partir da data atual (padrão: `14`). O módulo `calendar.js` utiliza esse valor para desabilitar a navegação de meses subsequentes e bloquear datas que ultrapassem o limite.
 
-1. **Lógica de Agendamento e Carrinho:**
-   - Não altere a lógica de cálculo de totais nem a composição da mensagem do WhatsApp (`buildMsg`) sem testes prévios.
-2. **Compatibilidade do WhatsApp:**
-   - **Nunca insira emojis dentro da mensagem gerada para o WhatsApp** (parâmetro `text` do `wa.me`). Emojis decodificados causam corrupção de caracteres ("") no WhatsApp Desktop do Windows. Utilize apenas texto puro, formatação com asteriscos `*negrito*` e quebras de linha `\n`.
-3. **Execução Local:**
-   - A aplicação é 100% tolerante à abertura por duplo clique (`file:///`). Chamadas a Service Worker e manifest são condicionadas aos protocolos `http:` e `https:`.
+### 1.3. Profissionais e Cupons
+- `CONFIG.profissionais` (string[]): Relação de barbeiros. A primeira entrada deve ser `"Sem preferência"` para não gerar fricção na escolha do usuário.
+- `CONFIG.cupons` (object): Dicionário indexado por código em caixa alta:
+  - `tipo: "percent"` calcula desconto percentual sobre o subtotal.
+  - `tipo: "fixed"` deduz valor fixo em BRL.
 
 ---
 
-## Dica Comercial e Conversão
+## 2. Chaves de Persistência Local (`localStorage`)
 
-A aplicação conta com recurso de **Cross-sell / Sugestão de adicionais** no checkout (ex: "Leve junto Pomada Modeladora"), aumentando o ticket médio de cada atendimento sem esforço operacional adicional.
+O módulo [`assets/js/store.js`](../assets/js/store.js) manipula as seguintes chaves de armazenamento no navegador do cliente:
+
+| Chave | Tipo de Dado | Finalidade Técnica |
+| :--- | :--- | :--- |
+| `dr_cart` | `JSON string` | Serialização das linhas atuais do carrinho para recuperação de sessão em recargas de página. |
+| `dr_nome` | `string` | Nome do cliente persistido para auto-preenchimento nos próximos agendamentos. |
+| `dr_tel` | `string` | Telefone com máscara `(XX) XXXXX-XXXX` persistido para auto-preenchimento. |
+| `dr_last` | `JSON string` | Snapshot completo do último agendamento finalizado (`{ cart, order }`) utilizado pelo botão de retenção `repeatLast()`. |
+
+---
+
+## 3. Referência de Tokens de Estilo (`assets/css/style.css`)
+
+A identidade visual é controlada por Design Tokens declarados no escopo `:root` em [`assets/css/style.css`](../assets/css/style.css).
+
+### 3.1. Paleta de Cores (Dark Vintage)
+```css
+:root {
+  /* Superfícies e Fundos */
+  --bg: #16130F;          /* Fundo principal da página com gradiente radial sutil */
+  --card: #211C15;        /* Superfície primária de cards, sheets e containers */
+  --card2: #2A2318;       /* Superfície secundária para inputs, slots e botões internos */
+
+  /* Cores de Acento (Couro & Ouro Envelhecido) */
+  --amber: #C79A5B;       /* Acento dourado para títulos, seleções e estados ativos */
+  --amber-deep: #a97e42;  /* Acento dourado escuro para estados de foco/hover */
+
+  /* Cores de Ação e Conversão */
+  --red: #9B2D20;         /* Vermelho clássico para botões de adicionar e sacola flutuante */
+  --red-deep: #7c2319;    /* Hover de ação primária */
+  --green: #25D366;       /* Verde oficial WhatsApp e status de loja aberta */
+
+  /* Tipografia e Linhas Divisórias */
+  --ink: #F1E7D8;         /* Texto de alto contraste sobre fundo escuro */
+  --ink-soft: #b3a284;    /* Texto secundário e legendas com menor contraste */
+  --line: #39301f;        /* Delimitador de bordas e divisores estruturais */
+
+  /* Elevação e Métricas */
+  --shadow: 0 10px 30px rgba(0,0,0,.45); /* Sombra padrão de elevação de cards */
+  --radius: 16px;                         /* Raio de curvatura base da aplicação */
+}
+```
+
+### 3.2. Breakpoints e Regras Responsivas de Layout
+
+| Dispositivo / Viewport | Breakpoint CSS | Comportamento Estrutural |
+| :--- | :--- | :--- |
+| **Mobile Compacto** | `< 380px` | A grade de slots (`.slot-grid`) reduz de 4 para 3 colunas. O calendário adapta alvos de dia para 36px. |
+| **Mobile Padrão** | `≤ 640px` | Grade de catálogo em coluna única (`grid-template-columns: 1fr`). Modais operam como **Bottom Sheet** (`align-self: flex-end; border-radius: 20px 20px 0 0`). |
+| **Tablet** | `641px - 1024px` | Catálogo em 2 colunas (`repeat(2, 1fr)`). Modais operam centralizados na viewport com escala (`scale(0.96) → scale(1)`). |
+| **Desktop / Wide** | `≥ 1025px` | Grade auto-fill fluida (`repeat(auto-fill, minmax(340px, 1fr))`). Barra de categorias com pílulas centralizadas sem scroll horizontal. |
+
+### 3.3. Funções Fluidas (`clamp()`)
+- **Container Master:** `padding: 0 clamp(16px, 4vw, 32px)` com largura máxima estrita de `1140px`.
+- **Títulos de Seção (`.sec-h h2`):** `font-size: clamp(24px, 2.4vw, 28px)`.
+- **Tipografia Textual (`.sobre p`):** `font-size: clamp(0.95rem, 1.1vw, 1.05rem)`.

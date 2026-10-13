@@ -1,6 +1,20 @@
-// Service worker simples — cache do "shell" pra abrir rápido e funcionar offline
-const CACHE = "dom-rocha-v4";
-const ASSETS = ["./", "./index.html", "./manifest.json", "./assets/css/style.css", "./assets/js/app.js", "./assets/img/icons/icon-192.png", "./assets/img/icons/icon-512.png"];
+// Service worker — cache do shell da aplicação para abertura instantânea e modo offline
+const CACHE = "dom-rocha-v5";
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./assets/css/style.css",
+  "./assets/js/app.js",
+  "./assets/js/config.js",
+  "./assets/js/store.js",
+  "./assets/js/calendar.js",
+  "./assets/js/checkout.js",
+  "./assets/js/whatsapp.js",
+  "./assets/img/hero.webp",
+  "./assets/img/icons/icon-192.png",
+  "./assets/img/icons/icon-512.png"
+];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
